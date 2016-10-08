@@ -3,23 +3,26 @@ import math
 import pandas
 from sklearn import cross_validation
 
-#this is more like expected entropy since it's passed a column
-def expectedEntropy(tCol): #it's passed a column and entropy (E) of the whole set's target column
-                                # so that it can return E-sum=expected entropy
+#this is passed the column to calculate entropy on, and the data frame
+def expectedEntropy(col, data):
     sum = 0.0
+    priors = []
+    labelList = data[col].value_counts().index.tolist()
+    numBranches = data[col].value_counts() #number of branches (self explanatory)
 
-    priors = []     #to hold the priors (used in entropy comp later)
-    temp = tCol.value_counts()
-    total=0.0                      #get the counts of each unique
-    for i in temp.index:        #for each unique value, calculate the prior
-        priors.append(temp.ix[i]/len(tCol.index))
-        total += temp.ix[i]
-     #   sum = sum + (-priors[i]*math.log(priors[i],2))
+    for i in range(len(numBranches)):
+        tempPrior1 = data.loc[(data[col]==labelList[i]) & (data["Creditability"]==1), [labelList[i],"Creditability"]]
+        tempPrior2 = data.loc[(data[col]==labelList[i]) & (data["Creditability"]==2), [labelList[i],"Creditability"]]
+        branchTotal = len(tempPrior1) + len(tempPrior2)
+        weight = branchTotal/len(data)
+        e = - len(tempPrior1)/branchTotal * math.log(len(tempPrior1)/branchTotal,2) - len(tempPrior2)/branchTotal * math.log(len(tempPrior2)/branchTotal,2)
+        sum += e*weight
 
-    for i in range(len(priors)):
-        sum = sum + (-priors[i] * math.log(priors[i], 2))*priors[i]/total
-    print(total)
-    return sum;
+    #branchEntropy = - len(tempPrior1)/branchTotal * math.log(len(tempPrior1)/branchTotal,2) - len(tempPrior2/branchTotal)*math.log(len(tempPrior2)/branchTotal,2)
+
+    #print(len(test))
+    return sum
+
 
 def entropy(dataSet):
     sum = 0.0
@@ -170,29 +173,28 @@ credit_data = pandas.read_csv('german.csv')
 
 train_data, test_data = cross_validation.train_test_split(credit_data,test_size=0.1)
 
-attributes_to_use = ['Status of existing checking account' , 'Credit history', 'Purpose']
+
+allAttribs = list(credit_data.columns.values)   #get labels of all columns
+allAttribs.pop()                                #delete the target col label
+
+
+attributes_to_use = allAttribs  #use all columns as attributes
+
 
 my_tree = DTree()
 
 my_tree.fit(train_data[attributes_to_use],train_data['Creditability'])
-#my_tree.print_tree()
+
 predictions = my_tree.predict(test_data[attributes_to_use])
-#print(accuracy(test_data['Creditability'], predictions))
-#getEntropy(credit_data)
+
+print(accuracy(predictions, credit_data['Creditability'])) #print accuracy
 
 
-entropyWHOLE = entropy(credit_data)
-expectedEntropy = expectedEntropy(credit_data['Status of existing checking account'])
-informationGain = entropyWHOLE - expectedEntropy
-print(entropyWHOLE)
-print(expectedEntropy) #this is getting wrong numbers because it's not weighted by instances down that branch
-print(informationGain)
-print(credit_data['Status of existing checking account'].value_counts())
+entropy = entropy(credit_data)
+ee1 = expectedEntropy('Status of existing checking account',credit_data)
+print(entropy - ee1)
+ee2 = expectedEntropy('Credit history', credit_data)
+print(entropy - ee2)
 
 
-#print(len(credit_data.loc[credit_data['Creditability']== 1]))
-#col = credit_data['Creditability']
-#print(col.value_counts().ix[1])
-#print(test.loc[2])
-#print(credit_data['Creditability'])
-#male_trips.groupby('start_station_id').size()
+
