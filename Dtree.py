@@ -3,11 +3,16 @@ import math
 import pandas
 from sklearn import cross_validation
 
+credit_data = ""        #this is global so I can use it in the choose attribute function?
+                        #probably should do this a better way
+entropyWhole = ""       #see above. Didn't want to recalculate this every time (slow)
+
 #this is passed the column to calculate entropy on, and the data frame
+#returns the expected entropy. When used, still need to subtract from entropy to get information gain
 def expectedEntropy(col, data):
     sum = 0.0
-    priors = []
-    labelList = data[col].value_counts().index.tolist()
+
+    labelList = data[col].value_counts().index.tolist() #a list of the labels (A11, A14, etc)
     numBranches = data[col].value_counts() #number of branches (self explanatory)
 
     for i in range(len(numBranches)):
@@ -18,12 +23,10 @@ def expectedEntropy(col, data):
         e = - len(tempPrior1)/branchTotal * math.log(len(tempPrior1)/branchTotal,2) - len(tempPrior2)/branchTotal * math.log(len(tempPrior2)/branchTotal,2)
         sum += e*weight
 
-    #branchEntropy = - len(tempPrior1)/branchTotal * math.log(len(tempPrior1)/branchTotal,2) - len(tempPrior2/branchTotal)*math.log(len(tempPrior2)/branchTotal,2)
-
-    #print(len(test))
     return sum
 
 
+#get the entropy of the data frame
 def entropy(dataSet):
     sum = 0.0
 
@@ -33,7 +36,7 @@ def entropy(dataSet):
         priors.append(temp.ix[i]/len(dataSet.index))
 
     for i in range(len(priors)):
-        sum = sum + (-priors[i] * math.log(priors[i], 2)) #need to do weighted calculations here
+        sum = sum + (-priors[i] * math.log(priors[i], 2))
     return sum
 
 
@@ -70,8 +73,11 @@ class DNode:
     # this should use the training data to determine the best attribute to use
     # as is, it just chooses one at random, but you will fix it to use information gain
     def choose_attribute(self):
+
         self.__attribute = random.choice(
             self.__predictor_columns.columns.values)  # what a terrible way to choose the attribute!
+        print("ran choose attribute")
+
 
     # calling this will continue building the tree from this node given its training examples
     def train(self):
@@ -171,14 +177,14 @@ def accuracy(series1, series2):
 
 credit_data = pandas.read_csv('german.csv')
 
+
+
 train_data, test_data = cross_validation.train_test_split(credit_data,test_size=0.1)
 
+#select only the attributes that are categorical
+categoricalAttribs = list(credit_data.select_dtypes(include=['object']).columns.values)
 
-allAttribs = list(credit_data.columns.values)   #get labels of all columns
-allAttribs.pop()                                #delete the target col label
-
-
-attributes_to_use = allAttribs  #use all columns as attributes
+attributes_to_use = categoricalAttribs  #use all categorical columns as attributes
 
 
 my_tree = DTree()
@@ -189,12 +195,12 @@ predictions = my_tree.predict(test_data[attributes_to_use])
 
 print(accuracy(predictions, credit_data['Creditability'])) #print accuracy
 
-
 entropy = entropy(credit_data)
-ee1 = expectedEntropy('Status of existing checking account',credit_data)
-print(entropy - ee1)
+#ee1 = expectedEntropy('Duration in month',credit_data)
+#print(entropy - ee1)
 ee2 = expectedEntropy('Credit history', credit_data)
 print(entropy - ee2)
+
 
 
 
