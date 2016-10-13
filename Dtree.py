@@ -2,6 +2,7 @@ import random
 import math
 import pandas
 from sklearn import cross_validation
+import matplotlib.pyplot as plt
 
 credit_data = ""        #this is global so I can use it in the choose attribute function?
 train_data = ""
@@ -11,14 +12,11 @@ entropyWhole = ""       #see above. Didn't want to recalculate this every time (
 #this is passed the column to calculate entropy on, and the data frame
 #returns the expected entropy. When used, still need to subtract from entropy to get information gain
 
-def pickBest(col, data):
-
 def expectedEntropy(col, data):
     sum = 0.0
     e = 0.0
     labelList = data[col].value_counts().index.tolist() #a list of the labels (A11, A14, etc)
     numBranches = data[col].value_counts() #number of branches (self explanatory)
-
     for i in range(len(numBranches)):
         howManyTrue = len(data.loc[(data[col]==labelList[i]) & (data["Creditability"]==1), [labelList[i],"Creditability"]])
         #print(howManyTrue)
@@ -81,10 +79,10 @@ class DNode:
     def choose_attribute(self):
         highestIndex = 0
         highestValue = 0.0
-        entropyWhole = entropy(test_data)
-        print(len(self.__predictor_columns.columns.values))
+        entropyWhole = entropy(train_data)
+        #print(len(self.__predictor_columns.columns.values))
         for i in range(len(self.__predictor_columns.columns.values)):
-            ee = expectedEntropy(self.__predictor_columns.columns.values[i], test_data)
+            ee = expectedEntropy(self.__predictor_columns.columns.values[i], train_data)
             if i < 1:
                 highestIndex = i
                 highestValue = entropyWhole - ee
@@ -92,9 +90,8 @@ class DNode:
                 highestIndex = i
                 highestValue = entropyWhole - ee
 
-
         print("Chose: ", self.__predictor_columns.columns.values[highestIndex])
-        self.__attribute = self.__predictor_columns.columns.values[highestValue]  # what a terrible way to choose the attribute!
+        self.__attribute = self.__predictor_columns.columns.values[highestIndex]
 
     # calling this will continue building the tree from this node given its training examples
     def train(self):
@@ -136,11 +133,15 @@ class DNode:
 
             else:  # we have a regular decision node for this attribute value
                 # get rid of the column for this attribute so it can't be selected again
-                examples_for_child_predictor_cols = examples_for_child_predictor_cols.drop(self.__attribute, 1)
+                    #If there's less than 4 "elements", stop
+                #print("Child node elements: " , len(examples_for_child_predictor_cols))
+                if (len(examples_for_child_predictor_cols)) > 10:       #should adjust this value
 
-                new_child = DNode(examples_for_child_predictor_cols, examples_for_child_target_col)
-                new_child.train()  # generate the rest of the subtree for this child
-                self.__child_nodes[value] = new_child  # put the new child node in the dictionary of children nodes
+                    examples_for_child_predictor_cols = examples_for_child_predictor_cols.drop(self.__attribute, 1)
+
+                    new_child = DNode(examples_for_child_predictor_cols, examples_for_child_target_col)
+                    new_child.train()  # generate the rest of the subtree for this child
+                    self.__child_nodes[value] = new_child  # put the new child node in the dictionary of children nodes
 
     # print out the tree - not the prettiest, but you can see it.
     def print_node(self, num_indents=0):
@@ -201,7 +202,7 @@ train_data, test_data = cross_validation.train_test_split(credit_data,test_size=
 #select only the attributes that are categorical
 categoricalAttribs = list(credit_data.select_dtypes(include=['object']).columns.values)
 
-attributes_to_use = ['Housing', 'Status of existing checking account', 'Credit history']
+attributes_to_use = categoricalAttribs
 
 
 
@@ -218,6 +219,7 @@ entropy = entropy(credit_data)
 #ee2 = expectedEntropy('Credit history', credit_data)
 print(accuracy(predictions, test_data['Creditability']))
 #my_tree.print_tree()
+
 
 
 
