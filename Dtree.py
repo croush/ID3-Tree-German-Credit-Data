@@ -1,3 +1,9 @@
+#Claire Roush
+#claireroush@gmail.com
+#Oct. 13, 2016
+#Decision Tree on German Credit Data
+
+
 import random
 import math
 import pandas
@@ -142,6 +148,9 @@ class DNode:
                     new_child = DNode(examples_for_child_predictor_cols, examples_for_child_target_col)
                     new_child.train()  # generate the rest of the subtree for this child
                     self.__child_nodes[value] = new_child  # put the new child node in the dictionary of children nodes
+                elif(len(examples_for_child_predictor_cols)) < 10:
+                    leaf_child = DLeaf(self.__most_common_value_here)
+                    self.__child_nodes[value] = leaf_child
 
     # print out the tree - not the prettiest, but you can see it.
     def print_node(self, num_indents=0):
@@ -225,3 +234,4 @@ print(accuracy(predictions, test_data['Creditability']))
 
 #only use a few columns and test, then move to all categorical
 #accuracy on training data should be 100% or close
+
